@@ -171,10 +171,6 @@ public:
       typename HostGrid::Traits::LocalIdSet::IdType
       >;
 
-    using CollectiveCommunication
-    [[deprecated("Use CommunicationType. Will be removed after release 2.9")]]
-    = typename HostGrid::CollectiveCommunication;
-
     using Communication = typename HostGrid::Communication;
 
     using LeafSubDomainInterfaceIterator  = Dune::mdgrid::LeafSubDomainInterfaceIterator<const Grid>;

@@ -189,10 +189,6 @@ public:
       typename MDGrid::HostGrid::Traits::LocalIdSet::IdType
       >;
 
-    using CollectiveCommunication
-    [[deprecated("Use Communication. Will be removed after release 2.9")]]
-    = typename MDGrid::CollectiveCommunication;
-
     using Communication = typename MDGrid::Communication;
   };
 
