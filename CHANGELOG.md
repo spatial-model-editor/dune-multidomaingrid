@@ -5,7 +5,7 @@ This is the 2.6.0 release of MultiDomainGrid, a meta grid build on top of the
 [DUNE][1] grid interface. See the file README for further details including
 license information.
 
-If you need help, please ask via [Dune GitLab][2]) If you find bugs, you can also
+If you need help, please ask via [Dune GitLab][2] If you find bugs, you can also
 submit them to the [bugtracker][3]. Even better, if you have managed to fix a
 problem, open a [merge request][4] to get your patch merged into the library.
 
@@ -15,17 +15,22 @@ Changes
 
 ### Unreleased
 
+* Grid factory is now smarter on checking the maximum number of SubDomains !48, !45
+* MultiDomain entity cast to SubDomain entity is now SFINAE friendly !42
+* Remove deprecated `MultiDomainMCMGMapper::update()` !51
+* Add forward declaration of grid factory !44
+* Add factory and gmsh reader specializations for MultiDomain grids !43, !46
+* Clean up old C++11 syntax !26
+* Grid can now take ownership of the host grid !40
+* Fix equal comparison of subdomain entities !41
+* Compatibility with dune 2.9.0 core modules !35, !36, !37, !38, !39
+
 ### MultiDomainGrid 2.8
 
-* Remove deprecated `MultiDomainMCMGMapper::update()`.
-
-* Fix bug where level index sets where not updated after grid adaptation.
-
-* Add entity iterator capabilities.
-
-* Compatibility with DUNE 2.8.0.
-
-* Remove dune-typetree dependency.
+* Fix bug where level index sets where not updated after grid adaptation !27
+* Add entity iterator capabilities !28
+* Compatibility with dune 2.8.0 core modules !32
+* Remove dune-typetree dependency !31
 
 ### MultiDomainGrid 2.7
 
