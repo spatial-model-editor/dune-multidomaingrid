@@ -10,9 +10,8 @@ own right.
 Version
 -------
 
-This is version 2.8-git of MultiDomainGrid. It is compatible with the 2.8-git
-release of the DUNE core modules. The versioning scheme of MultiDomainGrid
-has recently been synchronized to that of the core modules to make it easier for users
+This is version 2.9-git of MultiDomainGrid. The versioning scheme of MultiDomainGrid
+is synchronized to that of the core modules to make it easier for users
 to find a compatible release for their DUNE distribution.
 
 An overview of changes to the library can be found in the file

@@ -9,8 +9,8 @@ Copyright holders
 ------------|---------------------------------
  2013--2015 | Christoph Grüninger
  2009--2018 | Steffen Müthing
- 2020--2021 | Santiago Ospina De Los Rios
- 2010       | Oliver Sander
+ 2020--2024 | Santiago Ospina De Los Rios
+ 2010--2023 | Oliver Sander
 
 
 License

@@ -15,6 +15,8 @@ Changes
 
 ### Unreleased
 
+### MultiDomainGrid 2.9
+
 * Grid factory is now smarter on checking the maximum number of SubDomains !48, !45
 * MultiDomain entity cast to SubDomain entity is now SFINAE friendly !42
 * Remove deprecated `MultiDomainMCMGMapper::update()` !51
