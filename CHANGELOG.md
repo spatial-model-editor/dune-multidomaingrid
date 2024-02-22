@@ -15,6 +15,8 @@ Changes
 
 ### Unreleased
 
+* Compatibility with dune 2.10.0 core modules !54
+
 ### MultiDomainGrid 2.9
 
 * Grid factory is now smarter on checking the maximum number of SubDomains !48, !45
