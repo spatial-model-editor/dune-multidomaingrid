@@ -1,6 +1,13 @@
 #ifndef DUNE_MULTIDOMAINGRID_FACTORY_HH
 #define DUNE_MULTIDOMAINGRID_FACTORY_HH
 
+#include <dune/grid/common/exceptions.hh>
+
+#include <dune/geometry/type.hh>
+
+#include <optional>
+#include <memory>
+
 namespace Dune {
 
 namespace mdgrid {
@@ -51,17 +58,20 @@ public:
     return std::exchange(_grid_ptr, nullptr);
   }
 
-  void makeGrid(std::size_t max_subdomains = 1) {
+  void makeGrid(std::optional<typename MDGTraits::SubDomainIndex> max_subdomains = {}) {
     assert(not _grid_ptr);
 
     std::unique_ptr<MDGTraits> traits;
-    if constexpr (std::is_default_constructible_v<MDGTraits>)
+    if constexpr (Grid::maxSubDomainIndexIsStatic())
       traits = std::make_unique<MDGTraits>();
-    else
-      traits = std::make_unique<MDGTraits>(max_subdomains);
+    else {
+      if (not max_subdomains.has_value())
+        DUNE_THROW(GridError, "MultiDomainGrid needs a maximum number of subdomains, but none is provided");
+      traits = std::make_unique<MDGTraits>(*max_subdomains);
+    }
 
-    if (traits->maxSubDomainIndex() < max_subdomains)
-      DUNE_THROW(IOError, "Maximum number of sub-domains is bigger than what grid traits allows");
+    if (max_subdomains.has_value() and traits->maxSubDomainIndex() < *max_subdomains)
+      DUNE_THROW(GridError, "Maximum number of sub-domains is bigger than what grid traits allows");
 
     _grid_ptr = std::make_unique<Grid>(_host_grid_factory.createGrid(), *traits);
   }
