@@ -198,13 +198,6 @@ public:
     return true;
   }
 
-  /** @brief Recalculates indices after grid adaptation
-   */
-  [[deprecated("Use update(gridView) instead! Will be removed after release 2.8.")]]
-  void update ()
-  {
-    update(gridView());
-  }
 
   /** @brief Recalculates indices after grid adaptation
    *
