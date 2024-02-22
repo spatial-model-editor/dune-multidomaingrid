@@ -16,7 +16,7 @@ Changes
 ### Unreleased
 
 * Modernize old template-metaprogramming techniques !47
-* Compatibility with dune 2.10.0 core modules !54
+* Compatibility with dune 2.10 core modules !54 !55
 
 ### MultiDomainGrid 2.9
 
