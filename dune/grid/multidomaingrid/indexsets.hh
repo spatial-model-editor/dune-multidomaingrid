@@ -9,6 +9,7 @@
 #include <memory>
 #include <type_traits>
 #include <tuple>
+#include <optional>
 #include <utility>
 
 #include <dune/common/hybridutilities.hh>
@@ -54,176 +55,57 @@ struct buildMap {
 
 };
 
-//! \internal Helper mechanism for dispatching a call to a possibly non-existent method
-/**
- * This trick is necessary because some calls in the indexset (e.g. IndexSet::size(int codim) )
- * pass the codim as a run-time parameter. But as we do not necessarily support all codimensions,
- * we have to make sure that we only call the actual method if there is a data structure to
- * operate on. This is handled by the template parameter doDispatch: The specialisation for
- * doDispatch == false will simply throw an exception.
- */
-template<bool doDispatch, typename Impl, typename resulttype,bool alternate_dispatch>
-struct invokeIf;
-
-template<typename Impl, typename resulttype, bool alternate_dispatch>
-struct invokeIf<true,Impl,resulttype,alternate_dispatch> {
-
-  typedef resulttype result_type;
-
-  template<int codim>
-  result_type invoke() {
-    return _impl.template invoke<codim>();
-  }
-
-  Impl& _impl;
-
-  invokeIf(Impl& impl) :
-    _impl(impl)
-  {}
-
-};
-
-//! \internal
-template<typename Impl, typename resulttype>
-struct invokeIf<false,Impl, resulttype,false> {
-
-  typedef resulttype result_type;
-
-  template<int codim>
-  result_type invoke() {
-    DUNE_THROW(GridError,"codim not supported");
-  }
-
-  Impl& _impl;
-
-  invokeIf(Impl& impl) :
-    _impl(impl)
-  {}
-
-};
-
-template<typename Impl, typename resulttype>
-struct invokeIf<false,Impl, resulttype,true> {
-
-  typedef resulttype result_type;
-
-  template<int codim>
-  result_type invoke() {
-    return _impl.template invoke_unsupported<codim>();
-  }
-
-  Impl& _impl;
-
-  invokeIf(Impl& impl) :
-    _impl(impl)
-  {}
-
-};
-
-//! \internal Template meta program for dispatching a method to the correctly parameterised template method base on a run-time parameter
-template<typename Impl, typename resulttype, typename MDGridTraits, int codim, bool protect = true, bool alternate_dispatch = false>
-struct dispatchToCodim
-  : public dispatchToCodim<Impl,resulttype,MDGridTraits,codim-1,protect,alternate_dispatch> {
-
-  typedef resulttype result_type;
-
-  result_type dispatch(int cc) {
-    if (cc == codim)
-      return invokeIf<MDGridTraits::template Codim<codim>::supported,Impl,result_type,alternate_dispatch>(static_cast<Impl&>(*this)).template invoke<codim>();
-    return static_cast<dispatchToCodim<Impl,result_type,MDGridTraits,codim-1,protect,alternate_dispatch>&>(*this).dispatch(cc);
-  }
-
-};
-
-//! \internal Recursion limit for dispatchToCodim
-template<typename Impl, typename resulttype, typename MDGridTraits, bool alternate_dispatch>
-struct dispatchToCodim<Impl,resulttype,MDGridTraits,0,true,alternate_dispatch> {
-
-  typedef resulttype result_type;
-
-  result_type dispatch(int cc) {
-    if (cc == 0)
-      return invokeIf<MDGridTraits::template Codim<0>::supported,Impl,result_type,alternate_dispatch>(static_cast<Impl&>(*this)).template invoke<0>();
-    DUNE_THROW(GridError,"invalid codimension specified");
-  }
-
-};
-
-//! \internal Template meta program for dispatching a method to the correctly parameterised template method base on a run-time parameter
-template<typename Impl, typename resulttype, typename MDGridTraits, int codim, bool alternate_dispatch>
-struct dispatchToCodim<Impl,resulttype,MDGridTraits,codim,false,alternate_dispatch>
-  : public dispatchToCodim<Impl,resulttype,MDGridTraits,codim-1,false,alternate_dispatch> {
-
-  typedef resulttype result_type;
-
-  result_type dispatch(int cc) {
-    if (cc == codim)
-      return static_cast<Impl&>(*this).template invoke<codim>();
-    return static_cast<dispatchToCodim<Impl,result_type,MDGridTraits,codim-1,false,alternate_dispatch>&>(*this).dispatch(cc);
-  }
-
-};
-
-//! \internal Recursion limit for dispatchToCodim
-template<typename Impl, typename resulttype, typename MDGridTraits, bool alternate_dispatch>
-struct dispatchToCodim<Impl,resulttype,MDGridTraits,0,false,alternate_dispatch> {
-
-  typedef resulttype result_type;
-
-  result_type dispatch(int cc) {
-    if (cc == 0)
-      return static_cast<Impl&>(*this).template invoke<0>();
-    DUNE_THROW(GridError,"invalid codimension specified");
-  }
-
-};
-
-/**
- * \internal Helper structure for protecting calls at non-supported codims, similar to invokeIf.
- *
- * The main difference is that failures are silently ignored and that the called method may not return anything.
- */
-template<bool doApply, typename Impl>
-struct applyIf {
-
-  template<int codim, typename T>
-  void apply(T& t) const {
-    _impl.template apply<codim>(t);
-  }
-
-  Impl& _impl;
-
-  applyIf(Impl& impl) :
-    _impl(impl)
-  {}
-
-};
-
-//! \internal
-template<typename Impl>
-struct applyIf<false,Impl> {
-
-  template<int codim, typename T>
-  void apply(T& t) const {
-  }
-
-  Impl& _impl;
-
-  applyIf(Impl& impl) :
-    _impl(impl)
-  {}
-
-};
-
-//! \internal Little helper function for casting away constness. Avoids having to spell out the typename.
-template<typename T>
-T& rw(const T& t) {
-  return const_cast<T&>(t);
-}
-
 }
 
 //! @endcond
+
+/**
+ * This is the heart of this module. The index sets for each level of the grid view
+ * and for the leaf grid view store a container of the type ContainerMap which is
+ * roughly the following:
+ *
+ * @code{c++}
+ * template<int codim>
+ * struct Container {
+ *  struct MapEntry {
+ *    using SubDomainSet = typename MDGridTraits::template Codim<cc>::SubDomainSet;
+ *    SubDomainSet domains;
+ *    IndexType index;
+ *  };
+ *
+ *  // [geometry-type, host-index] -> map-entry
+ *  using IndexMap = std::vector<std::vector<MapEntry>>;
+ *
+ *  // [geometry-type, sub-domain] -> entity-count
+ *  using SizeMap = std::vector<typename Grid::MDGridTraits::template Codim<codim>::SizeContainer>;
+ *
+ *  // [sub-domain] -> entity-count
+ *  using CodimSizeMap = typename Grid::MDGridTraits::template Codim<codim>::SizeContainer;
+ *
+ *  // [map-entry.index] -> [sub-domain-offset-0-index, ..., sub-domain-offset-i-index]
+ *  using MultiIndexMap = std::vector<typename Grid::MDGridTraits::template Codim<codim>::MultiIndexContainer>;
+
+ *  IndexMap indexMap;
+ *  SizeMap sizeMap;
+ *  CodimSizeMap codimSizeMap;
+ *  MultiIndexMap multiIndexMap;
+ * };
+ *
+ * using ContainerMap = std::tuple<Container<0>, ..., Container<dim>>;
+ * @endcode
+ *
+ * Most of the fancy stuff is just to avoid instantiating unsupported codimensions by the host grid.
+ * But in general, the index of the sub-domain entity is stored in `multiIndexMap` and is
+ * accessed through the `indexMap`. If there is only one sub-domain in the entity, the sub-domain
+ * index is directly stored in `indexMap` to avoid the indirection of going to `multiIndexMap`.
+ * This also makes the multi-domain entities more compact.
+ *
+ * To be performant in the overlapping case, the current implementation requires that
+ * `MultiIndexContainer` stores its contents within its class itself (i.e. no indirection to the heap).
+ * Doing otherwise implies very scatter memory and a very irregular memory access pattern. Either a
+ * fixed integer or an array do this. An idea to make this performant in a more general case is to use
+ * a polymorphic allocator that creates the multi-indices contiguously in memory.
+ */
 
 /**
  * Index set for the MultiDomainGrid.
@@ -304,10 +186,11 @@ private:
   //! Placeholder struct for non-supported codimensions in data structures.
   struct NotSupported {};
 
-  template<int codim>
+  template<int c>
   struct Containers {
+    inline static const int codim = c;
 
-    static const bool supported = Grid::MDGridTraits::template Codim<codim>::supported;
+    inline static const bool supported = Grid::MDGridTraits::template Codim<codim>::supported;
 
     static_assert((codim > 0 || supported), "index mapping of codimension 0 must be supported!");
 
@@ -356,10 +239,6 @@ private:
   typedef typename detail::buildMap<Containers,dimension>::type ContainerMap;
 
   typedef std::vector<std::shared_ptr<IndexSetWrapper<GridImp, typename HostGridView::Grid::LevelGridView> > > LevelIndexSets;
-
-  //! Convenience subclass of dispatchToCodim for automatically passing in the MDGridTraits and the dimension
-  template<typename Impl,typename result_type, bool protect = true, bool alternate_dispatch = false>
-  struct dispatchToCodim : public detail::dispatchToCodim<Impl,result_type,MDGridTraits,dimension,protect,alternate_dispatch> {};
 
 public:
 
@@ -496,98 +375,47 @@ private:
     }
   }
 
-  //! functor template for retrieving a subindex.
-  struct getSubIndexForSubDomain : public dispatchToCodim<getSubIndexForSubDomain,IndexType> {
-
-    template<int codim>
-    IndexType invoke() const {
-      const MapEntry<codim>& me = _indexSet.indexMap<codim>()[LocalGeometryTypeIndex::index(_gt)][_hostIndex];
-      assert(me.domains.contains(_subDomain));
-      if (me.domains.simple()) {
-        return me.index;
-      } else {
-        return _indexSet.multiIndexMap<codim>()[me.index][me.domains.domainOffset(_subDomain)];
-      }
-    }
-
-    SubDomainIndex _subDomain;
-    GeometryType _gt;
-    IndexType _hostIndex;
-    const ThisType& _indexSet;
-
-    getSubIndexForSubDomain(SubDomainIndex subDomain, GeometryType gt, IndexType hostIndex, const ThisType& indexSet) :
-      _subDomain(subDomain),
-      _gt(gt),
-      _hostIndex(hostIndex),
-      _indexSet(indexSet)
-    {}
-
-  };
-
   template<typename HostEntity>
   IndexType subIndexForSubDomain(SubDomainIndex subDomain, const HostEntity& he, int i, int codim) const {
-    return getSubIndexForSubDomain(subDomain,
-                                   referenceElement(he.geometry()).type(i,codim - he.codimension),
-                                   _hostGridView.indexSet().subIndex(he,i,codim),
-                                   *this).dispatch(codim);
+    std::optional<IndexType> index;
+    auto gt = referenceElement(he.geometry()).type(i,codim - he.codimension);
+    auto hostIndex = _hostGridView.indexSet().subIndex(he,i,codim);
+    Dune::Hybrid::switchCases(std::make_index_sequence<dimension+1>{}, codim, [&](auto icodim){
+      if constexpr (MDGridTraits::template Codim<icodim>::supported) {
+        const MapEntry<icodim>& me = this->indexMap<icodim>()[LocalGeometryTypeIndex::index(gt)][hostIndex];
+        assert(me.domains.contains(subDomain));
+        if (me.domains.simple()) {
+          index = me.index;
+        } else {
+          index = this->multiIndexMap<icodim>()[me.index][me.domains.domainOffset(subDomain)];
+        }
+      } else
+        DUNE_THROW(GridError,"invalid codimension specified");
+    });
+    assert(index.has_value());
+    return *index;
   }
 
   Types typesForSubDomain(SubDomainIndex subDomain, int codim) const {
     return types(codim);
   }
 
-  struct getGeometryTypeSizeForSubDomain : public dispatchToCodim<getGeometryTypeSizeForSubDomain,IndexType,true,true> {
-
-    template<int codim>
-    IndexType invoke() const {
-      return _indexSet.sizeMap<codim>()[LocalGeometryTypeIndex::index(_gt)][_subDomain];
-    }
-
-    template<int codim>
-    IndexType invoke_unsupported() const {
-      return 0;
-    }
-
-    SubDomainIndex _subDomain;
-    GeometryType _gt;
-    const ThisType& _indexSet;
-
-    getGeometryTypeSizeForSubDomain(SubDomainIndex subDomain, GeometryType gt, const ThisType& indexSet) :
-      _subDomain(subDomain),
-      _gt(gt),
-      _indexSet(indexSet)
-    {}
-
-  };
-
   IndexType sizeForSubDomain(SubDomainIndex subDomain, GeometryType type) const {
-    return getGeometryTypeSizeForSubDomain(subDomain,type,*this).dispatch(dimension-type.dim());
+    std::optional<IndexType> index;
+    Dune::Hybrid::switchCases(Dune::range(index_constant<dimension+1>{}), dimension-type.dim(), [&](auto icodim){
+      if constexpr (MDGridTraits::template Codim<icodim>::supported)
+        index = this->sizeMap<icodim>()[LocalGeometryTypeIndex::index(type)][subDomain];
+    });
+    return index.value_or(0);
   }
 
-  struct getCodimSizeForSubDomain : public dispatchToCodim<getCodimSizeForSubDomain,IndexType,true,true> {
-
-    template<int codim>
-    IndexType invoke() const {
-      return _indexSet.codimSizes<codim>()[_subDomain];
-    }
-
-    template<int codim>
-    IndexType invoke_unsupported() const {
-      return 0;
-    }
-
-    SubDomainIndex _subDomain;
-    const ThisType& _indexSet;
-
-    getCodimSizeForSubDomain(SubDomainIndex subDomain, const ThisType& indexSet) :
-      _subDomain(subDomain),
-      _indexSet(indexSet)
-    {}
-
-  };
-
   IndexType sizeForSubDomain(SubDomainIndex subDomain, int codim) const {
-    return getCodimSizeForSubDomain(subDomain,*this).dispatch(codim);
+    std::optional<IndexType> index;
+    Dune::Hybrid::switchCases(Dune::range(index_constant<dimension+1>{}), codim, [&](auto icodim){
+      if constexpr (MDGridTraits::template Codim<icodim>::supported)
+        index = this->codimSizes<icodim>()[subDomain];
+    });
+    return index.value_or(0);
   }
 
   template<typename EntityType>
@@ -728,45 +556,42 @@ private:
   }
 
   template<typename Functor>
-  void applyToCodims(Functor func) const {
+  void forEachContainer(Functor func) const {
     // static loop over container tuple
     Hybrid::forEach(Dune::range(std::tuple_size<ContainerMap>{}),
-      [&](auto i){func(i, std::get<i>(_containers));}
-    );
+      [&](auto codim){
+        if constexpr (MDGridTraits::template Codim<codim>::supported)
+          func(std::get<codim>(_containers));
+      });
   }
 
   template<typename Functor>
-  void applyToCodims(Functor func) {
+  void forEachContainer(Functor func) {
     // static loop over container tuple
     Hybrid::forEach(Dune::range(std::tuple_size<ContainerMap>{}),
-      [&](auto i){func(i, std::get<i>(_containers));}
-    );
+      [&](auto codim){
+        if constexpr (MDGridTraits::template Codim<codim>::supported)
+          func(std::get<codim>(_containers));
+      });
   }
 
-  template<typename Impl>
-  struct applyToCodim {
-
-    template<typename I, typename T>
-    void operator()(I i, T&& t) const {
-      const int codim = I::value;
-      detail::applyIf<MDGridTraits::template Codim<codim>::supported,const Impl>(static_cast<const Impl&>(*this)).template apply<codim>(std::forward<T>(t));
+  void reset(bool full) {
+    const HostIndexSet& his = _hostGridView.indexSet();
+    if (full) {
+      ContainerMap cm = ContainerMap();
+      std::swap(_containers,cm);
     }
-
-  };
-
-  struct resetPerCodim : public applyToCodim<resetPerCodim> {
-
-    template<int codim>
-    void apply(Containers<codim>& c) const {
+    forEachContainer([&](auto& c){
       // setup per-codim sizemap
-      _traits.template setupSizeContainer<codim>(c.codimSizeMap);
+      constexpr int codim = std::decay_t<decltype(c)>::codim;
+      _grid._traits.template setupSizeContainer<codim>(c.codimSizeMap);
       c.indexMap.resize(LocalGeometryTypeIndex::size(dimension-codim));
       c.sizeMap.resize(LocalGeometryTypeIndex::size(dimension-codim));
-      for (auto gt : _his.types(codim)) {
+      for (auto gt : his.types(codim)) {
         const auto gt_index = LocalGeometryTypeIndex::index(gt);
-        if (_full) {
+        if (full) {
           // resize index map
-          c.indexMap[gt_index].resize(_his.size(gt));
+          c.indexMap[gt_index].resize(his.size(gt));
         } else if (codim > 0) {
           // clear out marked state for codim > 0 (we cannot keep the old
           // state for subentities, as doing so will leave stale entries if
@@ -776,37 +601,18 @@ private:
         }
         // setup / reset SizeMap counter
         auto& size_map = c.sizeMap[gt_index];
-        _traits.template setupSizeContainer<codim>(size_map);
+        _grid._traits.template setupSizeContainer<codim>(size_map);
         std::fill(size_map.begin(),size_map.end(),0);
       }
       // clear MultiIndexMap
       c.multiIndexMap.clear();
-    }
-
-    resetPerCodim(bool full, const HostIndexSet& his, const MDGridTraits& traits) :
-      _full(full),
-      _his(his),
-      _traits(traits)
-    {}
-
-    const bool _full;
-    const HostIndexSet& _his;
-    const MDGridTraits& _traits;
-  };
-
-  void reset(bool full) {
-    const HostIndexSet& his = _hostGridView.indexSet();
-    if (full) {
-      ContainerMap cm = ContainerMap();
-      std::swap(_containers,cm);
-    }
-    applyToCodims(resetPerCodim(full,his,_grid._traits));
+    });
   }
 
-  struct updatePerCodimSizes : public applyToCodim<updatePerCodimSizes> {
+  struct updatePerCodimSizes {
 
     template<int codim>
-    void apply(Containers<codim>& c) const {
+    void operator()(Containers<codim>& c) const {
       // reset size for this codim to zero
       std::fill(c.codimSizeMap.begin(),c.codimSizeMap.end(),0);
       // collect per-geometrytype sizes into codim size structure
@@ -819,7 +625,7 @@ private:
 
   void update(LevelIndexSets& levelIndexSets, bool full) {
     const HostIndexSet& his = _hostGridView.indexSet();
-    //reset(full);
+    // reset(full);
     for (auto& levelIndexSet : levelIndexSets) {
       levelIndexSet->reset(full);
     }
@@ -844,13 +650,13 @@ private:
         markAncestors(levelIndexSets,he,me.domains);
       }
       updateMapEntry(me,sm[hgt_index],multiIndexMap<0>());
-      applyToCodims(markSubIndices(he,me.domains,his,geo));
+      forEachContainer(markSubIndices(he,me.domains,his,geo));
     }
 
     propagateBorderEntitySubDomains();
 
-    applyToCodims(updateSubIndices(*this));
-    applyToCodims(updatePerCodimSizes());
+    forEachContainer(updateSubIndices(*this));
+    forEachContainer(updatePerCodimSizes());
     for(auto& levelIndexSet : levelIndexSets) {
       levelIndexSet->updateLevelIndexSet();
     }
@@ -871,17 +677,17 @@ private:
       IndexType hostIndex = his.index(he);
       MapEntry<0>& me = im[hgt_index][hostIndex];
       updateMapEntry(me,sm[hgt_index],multiIndexMap<0>());
-      applyToCodims(markSubIndices(he,me.domains,his,geo));
+      forEachContainer(markSubIndices(he,me.domains,his,geo));
     }
 
     propagateBorderEntitySubDomains();
 
-    applyToCodims(updateSubIndices(*this));
-    applyToCodims(updatePerCodimSizes());
+    forEachContainer(updateSubIndices(*this));
+    forEachContainer(updatePerCodimSizes());
   }
 
-  template<int codim, typename SizeContainer, typename MultiIndexContainer>
-  void updateMapEntry(MapEntry<codim>& me, SizeContainer& sizes, std::vector<MultiIndexContainer>& multiIndexMap) {
+  template<int codim, typename SizeContainer, typename MultiIndexContainer, typename Alloc>
+  void updateMapEntry(MapEntry<codim>& me, SizeContainer& sizes, std::vector<MultiIndexContainer, Alloc>& multiIndexMap) {
     switch (me.domains.state()) {
     case MapEntry<codim>::SubDomainSet::emptySet:
       break;
@@ -909,10 +715,10 @@ private:
     }
   }
 
-  struct markSubIndices : public applyToCodim<const markSubIndices> {
+  struct markSubIndices {
 
     template<int codim>
-    void apply(Containers<codim>& c) const {
+    void operator()(Containers<codim>& c) const {
       if (codim == 0)
         return;
       const int size = _refEl.size(codim);
@@ -939,10 +745,10 @@ private:
 
   };
 
-  struct updateSubIndices : public applyToCodim<const updateSubIndices> {
+  struct updateSubIndices {
 
     template<int codim>
-    void apply(Containers<codim>& c) const {
+    void operator()(Containers<codim>& c) const {
       if (codim == 0)
         return;
       for (std::size_t gt_index = 0,
@@ -960,19 +766,14 @@ private:
     {}
   };
 
-  //! functor template for retrieving a subindex.
-  struct getSupportsCodim : public dispatchToCodim<getSupportsCodim,bool,false> {
-
-    template<int codim>
-    bool invoke() const {
-      return MDGridTraits::template Codim<codim>::supported && Dune::Capabilities::hasEntity<HostGrid,codim>::v;
-    }
-
-  };
-
   bool supportsCodim(int codim) const
   {
-    return getSupportsCodim().dispatch(codim);
+    auto codim_seq = std::make_index_sequence<dimension + 1>{};
+    return Dune::Hybrid::switchCases(codim_seq, codim, [&](auto icodim) {
+      return MDGridTraits::template Codim<icodim>::supported && Dune::Capabilities::hasEntity<HostGrid, icodim>::v;
+    }, []{
+      return false;
+    });
   }
 
   template<typename Impl>
