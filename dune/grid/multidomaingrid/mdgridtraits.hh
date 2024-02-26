@@ -71,15 +71,16 @@ template<int dim, std::size_t subDomainsPerCell, template<int dim_, int codim> c
 struct DynamicSubDomainCountTraits {
 
   typedef int SubDomainIndex;
-  static const SubDomainIndex empty = -1;
-  static const int dimension = dim;
+  inline static const SubDomainIndex empty = -1;
+  inline static const int dimension = dim;
+
+  inline static const std::size_t maxSubDomainsPerCell = subDomainsPerCell;
 
   static constexpr bool maxSubDomainIndexIsStatic()
   {
     return false;
   }
 
-  static const std::size_t maxSubDomainsPerCell = subDomainsPerCell;
 
   SubDomainIndex maxSubDomainIndex() const
   {
@@ -137,10 +138,10 @@ template<int dim, std::size_t maxSubDomains, template<int dim_, int codim> class
 struct FewSubDomainsTraits {
 
   typedef unsigned int SubDomainIndex;
-  static const SubDomainIndex empty = ~SubDomainIndex(0); // this is not used, but has to be present to make the compiler happy
-  static const int dimension = dim;
+  inline static const SubDomainIndex empty = ~SubDomainIndex(0); // this is not used, but has to be present to make the compiler happy
+  inline static const int dimension = dim;
 
-  static const std::size_t maxSubDomainsPerCell = maxSubDomains;
+  inline static const std::size_t maxSubDomainsPerCell = maxSubDomains;
 
   static constexpr bool maxSubDomainIndexIsStatic()
   {
@@ -160,7 +161,7 @@ struct FewSubDomainsTraits {
 
   template<int codim>
   struct CodimBase {
-    static const std::size_t maxSubDomainsPerEntity = maxSubDomains;
+    inline static const std::size_t maxSubDomainsPerEntity = maxSubDomains;
     typedef Dune::mdgrid::IntegralTypeSubDomainSet<SubDomainIndex,maxSubDomainsPerEntity> SubDomainSet;
     typedef std::array<int,maxSubDomainsPerEntity> MultiIndexContainer;
     typedef std::array<int,maxSubDomains> SizeContainer;
@@ -168,7 +169,7 @@ struct FewSubDomainsTraits {
 
   template<int codim>
   struct Codim : public std::conditional_t<supportedCodims<dim,codim>::supported,CodimBase<codim>,EmptyCodimBase> {
-    static const bool supported = supportedCodims<dim,codim>::supported;
+    inline static const bool supported = supportedCodims<dim,codim>::supported;
   };
 
   template<int codim>
