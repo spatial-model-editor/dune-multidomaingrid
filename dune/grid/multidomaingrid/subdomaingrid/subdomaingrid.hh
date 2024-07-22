@@ -562,7 +562,7 @@ public:
                     int level) const
   {
     DataHandleWrapper<CommDataHandleIF<DataHandleImp,DataTypeImp> > datahandle(data,*this);
-    _grid._hostGrid.levelGridView(level).communicate(datahandle,iftype,dir);
+    _grid.hostGrid().levelGridView(level).communicate(datahandle,iftype,dir);
   }
 
   template<typename DataHandleImp, typename DataTypeImp>
@@ -571,7 +571,7 @@ public:
                     CommunicationDirection dir) const
   {
     DataHandleWrapper<CommDataHandleIF<DataHandleImp,DataTypeImp> > datahandle(data,*this);
-    _grid._hostGrid.leafGridView().communicate(datahandle,iftype,dir);
+    _grid.hostGrid().leafGridView().communicate(datahandle,iftype,dir);
   }
 
   size_t numBoundarySegments() const
@@ -706,8 +706,8 @@ private:
   SubDomainGrid(MDGrid& grid, SubDomainIndex subDomain) :
     _grid(grid),
     _subDomain(subDomain),
-    _globalIdSet(*this,grid._hostGrid.globalIdSet()),
-    _localIdSet(*this,grid._hostGrid.localIdSet()),
+    _globalIdSet(*this,grid.hostGrid().globalIdSet()),
+    _localIdSet(*this,grid.hostGrid().localIdSet()),
     _leafIndexSet(*this,grid.leafIndexSet())
   {
     update();

@@ -15,6 +15,7 @@ Changes
 
 ### Unreleased
 
+* Expose host grid as a public member function !56
 * Modernize old template-metaprogramming techniques !47
 * Compatibility with dune 2.10 core modules !54 !55
 
