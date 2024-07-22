@@ -18,27 +18,18 @@ include(DuneMacros)
 # start a dune project with information from dune.module
 dune_project()
 
-# add documentation files
-set(EXTRA_DIST
-  COPYING.md
-  dune.module
-  GPL-2
-  GPL-3
-  LGPL-3
-  README
-  README.md
-  README.GIT.md
-  RELEASE_NOTES.md
-  )
-
 dune_enable_all_packages(VERBOSE)
+
+dune_add_library(dunemultidomaingrid INTERFACE
+  EXPORT_NAME MultiDomainGrid
+  LINK_LIBRARIES Dune::Grid)
 
 # disable the upstream testing magic
 set(DUNE_TEST_MAGIC OFF)
 
-add_subdirectory("doc")
-add_subdirectory("dune")
-add_subdirectory("test")
+add_subdirectory(doc)
+add_subdirectory(dune)
+add_subdirectory(test)
 
 # finalize the dune project, e.g. generating config.h etc.
-finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
+finalize_dune_project()
