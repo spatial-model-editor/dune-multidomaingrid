@@ -427,11 +427,10 @@ public:
    * \param hostGrid                the host grid that will be wrapped by the MultiDomainGrid
    * \param supportLevelIndexSets   flag indicating support for level index sets on subdomains
    */
-  explicit MultiDomainGrid(const std::shared_ptr<HostGrid>& hostGrid, bool supportLevelIndexSets = true) :
-    _hostGridPtr(hostGrid),
-    _hostGrid(*_hostGridPtr),
+  explicit MultiDomainGrid(const std::shared_ptr<HostGrid>& hostGridPtr, bool supportLevelIndexSets = true) :
+    _hostGridPtr(hostGridPtr),
     _traits(),
-    _leafIndexSet(*this,_hostGrid.leafGridView()),
+    _leafIndexSet(*this,hostGrid().leafGridView()),
     _globalIdSet(*this),
     _localIdSet(*this),
     _state(stateFixed),
@@ -449,11 +448,10 @@ public:
    * \param traits                  an instance of the grid traits, which might contain runtime information
    * \param supportLevelIndexSets   flag indicating support for level index sets on subdomains
    */
-  explicit MultiDomainGrid(const std::shared_ptr<HostGrid>& hostGrid, const MDGridTraitsType& traits, bool supportLevelIndexSets = true) :
-    _hostGridPtr(hostGrid),
-    _hostGrid(*_hostGridPtr),
+  explicit MultiDomainGrid(const std::shared_ptr<HostGrid>& hostGridPtr, const MDGridTraitsType& traits, bool supportLevelIndexSets = true) :
+    _hostGridPtr(hostGridPtr),
     _traits(traits),
-    _leafIndexSet(*this,_hostGrid.leafGridView()),
+    _leafIndexSet(*this,hostGrid().leafGridView()),
     _globalIdSet(*this),
     _localIdSet(*this),
     _state(stateFixed),
@@ -497,12 +495,12 @@ public:
   typename Traits::template Codim<EntitySeed::codimension>::Entity
   entity(const EntitySeed& entitySeed) const
   {
-    return {EntityWrapper<EntitySeed::codimension,dimension,const GridImp>(_hostGrid.entity(entitySeed.hostEntitySeed()))};
+    return {EntityWrapper<EntitySeed::codimension,dimension,const GridImp>(hostGrid().entity(entitySeed.hostEntitySeed()))};
   }
 
   //! The current maximum level of the grid.
   int maxLevel() const {
-    return _hostGrid.maxLevel();
+    return hostGrid().maxLevel();
   }
 
   template<int codim>
@@ -513,7 +511,7 @@ public:
         codim,
         All_Partition,
         const GridImp
-        >(_hostGrid.levelGridView(level).template begin<codim>())
+        >(hostGrid().levelGridView(level).template begin<codim>())
     };
   }
 
@@ -525,7 +523,7 @@ public:
         codim,
         All_Partition,
         const GridImp
-        >(_hostGrid.levelGridView(level).template end<codim>())
+        >(hostGrid().levelGridView(level).template end<codim>())
     };
   }
 
@@ -537,7 +535,7 @@ public:
         codim,
         pitype,
         const GridImp
-        >(_hostGrid.levelGridView(level).template begin<codim,pitype>())
+        >(hostGrid().levelGridView(level).template begin<codim,pitype>())
     };
   }
 
@@ -549,7 +547,7 @@ public:
         codim,
         pitype,
         const GridImp
-        >(_hostGrid.levelGridView(level).template end<codim,pitype>())
+        >(hostGrid().levelGridView(level).template end<codim,pitype>())
     };
   }
 
@@ -561,7 +559,7 @@ public:
         codim,
         All_Partition,
         const GridImp
-        >(_hostGrid.leafGridView().template begin<codim>())
+        >(hostGrid().leafGridView().template begin<codim>())
     };
   }
 
@@ -573,7 +571,7 @@ public:
         codim,
         All_Partition,
         const GridImp
-        >(_hostGrid.leafGridView().template end<codim>())
+        >(hostGrid().leafGridView().template end<codim>())
     };
   }
 
@@ -585,7 +583,7 @@ public:
         codim,
         pitype,
         const GridImp
-        >(_hostGrid.leafGridView().template begin<codim,pitype>())
+        >(hostGrid().leafGridView().template begin<codim,pitype>())
     };
   }
 
@@ -597,7 +595,7 @@ public:
         codim,
         pitype,
         const GridImp
-        >(_hostGrid.leafGridView().template end<codim,pitype>())
+        >(hostGrid().leafGridView().template end<codim,pitype>())
     };
   }
   /*@}*/
@@ -703,19 +701,19 @@ public:
   /** @name Dune grid interface methods */
   /*@{*/
   int size(int level, int codim) const {
-    return _hostGrid.size(level,codim);
+    return hostGrid().size(level,codim);
   }
 
   int size(int codim) const {
-    return _hostGrid.size(codim);
+    return hostGrid().size(codim);
   }
 
   int size(int level, GeometryType type) const {
-    return _hostGrid.size(level,type);
+    return hostGrid().size(level,type);
   }
 
   int size(GeometryType type) const {
-    return _hostGrid.size(type);
+    return hostGrid().size(type);
   }
 
   const typename Traits::GlobalIdSet& globalIdSet() const {
@@ -740,25 +738,25 @@ public:
 
   void globalRefine(int refCount) {
     saveMultiDomainState();
-    _hostGrid.globalRefine(refCount);
+    hostGrid().globalRefine(refCount);
     updateIndexSets();
     restoreMultiDomainState();
   }
 
   bool mark(int refCount, const typename Traits::template Codim<0>::Entity& e) {
     assert(_state == stateFixed);
-    return _hostGrid.mark(refCount, hostEntity(e));
+    return hostGrid().mark(refCount, hostEntity(e));
   }
 
   int getMark(const typename Traits::template Codim<0>::Entity& e) {
     assert(_state == stateFixed);
-    return _hostGrid.getMark(hostEntity(e));
+    return hostGrid().getMark(hostEntity(e));
   }
 
   bool preAdapt() {
     assert(_state == stateFixed && _adaptState == stateFixed);
     _adaptState = statePreAdapt;
-    bool result = _hostGrid.preAdapt();
+    bool result = hostGrid().preAdapt();
     return result;
   }
 
@@ -766,7 +764,7 @@ public:
     assert(_state == stateFixed && _adaptState == statePreAdapt);
     _adaptState = statePostAdapt;
     saveMultiDomainState();
-    bool result = _hostGrid.adapt();
+    bool result = hostGrid().adapt();
     updateIndexSets();
     restoreMultiDomainState();
     return result;
@@ -775,27 +773,27 @@ public:
   void postAdapt() {
     assert(_state == stateFixed && _adaptState == statePostAdapt);
     _adaptState = stateFixed;
-    _hostGrid.postAdapt();
+    hostGrid().postAdapt();
   }
 
   int overlapSize(int level, int codim) const {
-    return _hostGrid.overlapSize(level,codim);
+    return hostGrid().overlapSize(level,codim);
   }
 
   int overlapSize(int codim) const {
-    return _hostGrid.overlapSize(codim);
+    return hostGrid().overlapSize(codim);
   }
 
   int ghostSize(int level, int codim) const {
-    return _hostGrid.ghostSize(level,codim);
+    return hostGrid().ghostSize(level,codim);
   }
 
   int ghostSize(int codim) const {
-    return _hostGrid.ghostSize(codim);
+    return hostGrid().ghostSize(codim);
   }
 
   const typename Traits::Communication& comm() const {
-    return _hostGrid.comm();
+    return hostGrid().comm();
   }
 
   template<typename DataHandleImp, typename DataTypeImp>
@@ -805,7 +803,7 @@ public:
                     int level) const
   {
     DataHandleWrapper<CommDataHandleIF<DataHandleImp,DataTypeImp> > datahandle(data,*this);
-    _hostGrid.levelGridView(level).communicate(datahandle,iftype,dir);
+    hostGrid().levelGridView(level).communicate(datahandle,iftype,dir);
   }
 
   template<typename DataHandleImp, typename DataTypeImp>
@@ -814,7 +812,7 @@ public:
                     CommunicationDirection dir) const
   {
     DataHandleWrapper<CommDataHandleIF<DataHandleImp,DataTypeImp> > datahandle(data,*this);
-    _hostGrid.leafGridView().communicate(datahandle,iftype,dir);
+    hostGrid().leafGridView().communicate(datahandle,iftype,dir);
   }
 
   template<typename DataHandle>
@@ -832,7 +830,7 @@ public:
     }
 
     LoadBalancingDataHandle<DataHandle> dataHandleWrapper(*this,dataHandle);
-    if (!_hostGrid.loadBalance(dataHandleWrapper))
+    if (!hostGrid().loadBalance(dataHandleWrapper))
       return false;
 
     this->startSubDomainMarking();
@@ -858,7 +856,7 @@ public:
 
   size_t numBoundarySegments() const
   {
-    return _hostGrid.numBoundarySegments();
+    return hostGrid().numBoundarySegments();
   }
 
   /*@}*/
@@ -893,7 +891,7 @@ public:
     assert(_state == stateMarking && _adaptState == stateFixed);
     if (_supportLevelIndexSets) {
       for (int l = 0; l <= maxLevel(); ++l) {
-        _tmpLevelIndexSets.push_back(std::make_shared<LevelIndexSetImp>(*this,_hostGrid.levelGridView(l)));
+        _tmpLevelIndexSets.push_back(std::make_shared<LevelIndexSetImp>(*this,hostGrid().levelGridView(l)));
       }
     }
     _tmpLeafIndexSet->update(_tmpLevelIndexSets,true);
@@ -1026,20 +1024,19 @@ public:
     return _traits;
   }
 
-private:
-
   const HostGrid& hostGrid() const
   {
-    return _hostGrid;
+    return *_hostGridPtr;
   }
 
   HostGrid& hostGrid()
   {
-    return _hostGrid;
+    return *_hostGridPtr;
   }
 
+private:
+
   std::shared_ptr<HostGrid> _hostGridPtr;
-  HostGrid& _hostGrid;
   const MDGridTraitsType _traits;
 
   std::vector<std::shared_ptr<LevelIndexSetImp> > _levelIndexSets;
@@ -1065,7 +1062,7 @@ private:
     // make sure we have enough LevelIndexSets
     if (_supportLevelIndexSets) {
       while (static_cast<int>(_levelIndexSets.size()) <= maxLevel()) {
-        _levelIndexSets.push_back(std::make_shared<LevelIndexSetImp>(*this,_hostGrid.levelGridView(_levelIndexSets.size())));
+        _levelIndexSets.push_back(std::make_shared<LevelIndexSetImp>(*this,hostGrid().levelGridView(_levelIndexSets.size())));
       }
       // and make sure we don't have too many...
       if (static_cast<int>(_levelIndexSets.size()) > maxLevel() + 1)
@@ -1077,8 +1074,8 @@ private:
     _leafIndexSet.reset(true);
     _leafIndexSet.update(_levelIndexSets,true);
 
-    _globalIdSet.update(_hostGrid.globalIdSet());
-    _localIdSet.update(_hostGrid.localIdSet());
+    _globalIdSet.update(hostGrid().globalIdSet());
+    _localIdSet.update(hostGrid().localIdSet());
 
     // rebuild level index sets on subgrids
     for (auto& subGridPair : _subDomainGrids)

@@ -132,7 +132,7 @@ class LeafSubDomainInterfaceIterator :
   typedef typename Base::Intersection::SubDomainIndex SubDomainIndex;
 
   LeafSubDomainInterfaceIterator(const GridImp& grid, SubDomainIndex subDomain1, SubDomainIndex subDomain2, bool end=false) :
-    Base(grid.leafGridView(),grid._hostGrid.leafGridView(),Controller(subDomain1,subDomain2),end)
+    Base(grid.leafGridView(),grid.hostGrid().leafGridView(),Controller(subDomain1,subDomain2),end)
   {}
 
 };
@@ -167,7 +167,7 @@ class LevelSubDomainInterfaceIterator :
   typedef typename Base::Intersection::SubDomainIndex SubDomainIndex;
 
   LevelSubDomainInterfaceIterator(const GridImp& grid, SubDomainIndex subDomain1, SubDomainIndex subDomain2, int level, bool end=false) :
-    Base(grid.levelGridView(level),grid._hostGrid.levelGridView(level),Controller(subDomain1,subDomain2),end)
+    Base(grid.levelGridView(level),grid.hostGrid().levelGridView(level),Controller(subDomain1,subDomain2),end)
   {}
 
 };

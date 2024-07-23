@@ -166,7 +166,7 @@ class LeafAllSubDomainInterfacesIterator :
                                      > Base;
 
   LeafAllSubDomainInterfacesIterator(const GridImp& grid, bool end=false) :
-    Base(grid.leafGridView(),grid._hostGrid.leafGridView(),Controller(),end)
+    Base(grid.leafGridView(),grid.hostGrid().leafGridView(),Controller(),end)
   {}
 
 };
@@ -199,7 +199,7 @@ class LevelAllSubDomainInterfacesIterator :
                                      > Base;
 
   LevelAllSubDomainInterfacesIterator(const GridImp& grid, int level, bool end=false) :
-    Base(grid.levelGridView(level),grid._hostGrid.levelGridView(level),Controller(),end)
+    Base(grid.levelGridView(level),grid.hostGrid().levelGridView(level),Controller(),end)
   {}
 
 };
