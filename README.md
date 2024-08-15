@@ -110,11 +110,11 @@ Links
 [2]:  http://dune-project.org
 [3]:  https://gitlab.dune-project.org/extensions/dune-multidomaingrid/issues
 [4]:  https://gitlab.dune-project.org/extensions/dune-multidomaingrid/merge_requests
-[5]:  http://dune-project.org/pdelab/
+[5]:  https://dune-project.org/modules/dune-pdelab/
 [6]:  http://github.com/smuething/dune-multidomain
 [7]:  https://dune-project.org/modules/dune-pdelab/
 [8]:  http://gcc.gnu.org/onlinedocs/libstdc++/faq.html#faq.license
-[9]:  COPYING.md
+[9]:  https://gitlab.dune-project.org/extensions/dune-multidomaingrid/-/blob/master/COPYING.md?ref_type=heads
 [11]: https://dune-project.org/doc/installation/
 [12]: https://dune-project.org/buildsystem/
-[13]: CHANGELOG.md
+[13]: https://gitlab.dune-project.org/extensions/dune-multidomaingrid/-/blob/master/CHANGELOG.md?ref_type=heads
