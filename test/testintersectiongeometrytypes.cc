@@ -1,5 +1,3 @@
-#include "config.h"
-
 #include <cassert>
 #include <iostream>
 #include <memory>

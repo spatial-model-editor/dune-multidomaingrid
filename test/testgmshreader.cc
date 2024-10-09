@@ -1,5 +1,4 @@
 
-#include "config.h"
 #include <dune/grid/uggrid.hh>
 #include <dune/grid/io/file/gmshreader.hh>
 #include <dune/grid/common/gridinfo.hh>

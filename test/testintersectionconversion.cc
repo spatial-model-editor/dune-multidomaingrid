@@ -1,7 +1,3 @@
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <dune/common/unused.hh>
 #include <dune/grid/yaspgrid.hh>
 #include <dune/grid/multidomaingrid.hh>

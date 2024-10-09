@@ -1,6 +1,3 @@
-#include "config.h"
-#define GRIDDIM 2
-
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/grid/utility/structuredgridfactory.hh>
 #include <dune/grid/multidomaingrid.hh>
