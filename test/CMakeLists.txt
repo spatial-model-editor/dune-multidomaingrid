@@ -7,6 +7,11 @@
 # All of these tests are expected to run without generating any warnings, so
 # they use -Werror to fail in that case.
 #
+
+# make all libraries available in this directory
+link_libraries(Dune::MultiDomainGrid)
+dune_enable_all_packages()
+
 foreach(dimsize IN ITEMS "1;64" "2;16" "3;4")
   list(GET dimsize 0 dim)
   list(GET dimsize 1 size)

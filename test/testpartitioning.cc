@@ -1,5 +1,3 @@
-#include "config.h"
-
 #include <dune/common/unused.hh>
 #include <dune/common/parallel/mpihelper.hh>
 #include <dune/grid/yaspgrid.hh>

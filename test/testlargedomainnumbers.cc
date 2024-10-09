@@ -1,5 +1,3 @@
-#include "config.h"
-
 #include <cstdlib>
 
 #include <dune/common/parallel/mpihelper.hh>

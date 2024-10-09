@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.16)
 project(dune-multidomaingrid CXX)
 
 if(NOT (dune-common_DIR OR dune-common_ROOT OR
@@ -18,18 +18,14 @@ include(DuneMacros)
 # start a dune project with information from dune.module
 dune_project()
 
-dune_enable_all_packages(VERBOSE)
-
+# Create the main target with a Dune::MultiDomainGrid alias
 dune_add_library(dunemultidomaingrid INTERFACE
   EXPORT_NAME MultiDomainGrid
   LINK_LIBRARIES Dune::Grid)
-
-# disable the upstream testing magic
-set(DUNE_TEST_MAGIC OFF)
 
 add_subdirectory(doc)
 add_subdirectory(dune)
 add_subdirectory(test)
 
-# finalize the dune project, e.g. generating config.h etc.
+# finalize the dune project, e.g. export Dune::MultiDomainGrid target
 finalize_dune_project()
