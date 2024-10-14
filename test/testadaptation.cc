@@ -3,12 +3,12 @@
 #include <dune/grid/multidomaingrid.hh>
 #include "output.hh"
 
-#if HAVE_UG
+#if HAVE_DUNE_UGGRID
 #include <dune/grid/uggrid.hh>
 #endif
 
 int main(int argc, char** argv) {
-#if HAVE_UG
+#if HAVE_DUNE_UGGRID
   try {
     Dune::MPIHelper::instance(argc,argv);
     typedef Dune::UGGrid<2> AdaptableGrid;
@@ -110,5 +110,5 @@ int main(int argc, char** argv) {
 #else
   std::cerr << "You need UGGrid to run this test." << std::endl;
   return 77;
-#endif // HAVE_UG
+#endif // HAVE_DUNE_UGGRID
 }

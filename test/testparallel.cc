@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <iterator>
 
-#if HAVE_UG
+#if HAVE_DUNE_UGGRID
 #include <dune/grid/uggrid.hh>
 #endif
 
@@ -214,7 +214,7 @@ int main(int argc, char** argv)
     }
 
     {
-#if HAVE_UG
+#if HAVE_DUNE_UGGRID
       typedef Dune::UGGrid<2> HostGrid;
       Dune::FieldVector<double,2> lower_left(0.0);
       Dune::FieldVector<double,2> upper_right(1.0);
