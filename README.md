@@ -10,7 +10,7 @@ own right.
 Version
 -------
 
-This is version 2.9-git of MultiDomainGrid. The versioning scheme of MultiDomainGrid
+This is version 2.10-git of MultiDomainGrid. The versioning scheme of MultiDomainGrid
 is synchronized to that of the core modules to make it easier for users
 to find a compatible release for their DUNE distribution.
 
