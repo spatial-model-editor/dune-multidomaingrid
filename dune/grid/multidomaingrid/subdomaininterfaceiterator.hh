@@ -103,7 +103,7 @@ private:
     _hostGridView = rhs._hostGridView;
     _controller = rhs._controller;
     _hostIterator = rhs._hostIterator;
-    _hostEnd = rhs.hostEnd;
+    _hostEnd = rhs._hostEnd;
     _hostIntersectionIterator = rhs._hostIntersectionIterator;
     _hostIntersectionEnd = rhs._hostIntersectionEnd;
     _inverseHostIntersection = rhs._inverseHostIntersection;
