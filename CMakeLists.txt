@@ -15,13 +15,20 @@ list(APPEND CMAKE_MODULE_PATH ${dune-common_MODULE_PATH}
 #include the dune macros
 include(DuneMacros)
 
+# deactivate global include-directories
+dune_policy(SET DP_DEFAULT_INCLUDE_DIRS NEW)
+
 # start a dune project with information from dune.module
 dune_project()
 
 # Create the main target with a Dune::MultiDomainGrid alias
 dune_add_library(dunemultidomaingrid INTERFACE
   EXPORT_NAME MultiDomainGrid
-  LINK_LIBRARIES Dune::Grid)
+  LINK_LIBRARIES ${DUNE_LIBS})
+
+# set include directories for main library
+dune_default_include_directories(dunemultidomaingrid INTERFACE)
+
 
 add_subdirectory(doc)
 add_subdirectory(dune)
