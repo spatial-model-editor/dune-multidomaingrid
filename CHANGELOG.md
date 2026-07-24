@@ -1,7 +1,7 @@
 MultiDomainGrid
 ===============
 
-This is the 2.6.0 release of MultiDomainGrid, a meta grid build on top of the
+This is the 2.11 release of MultiDomainGrid, a meta grid build on top of the
 [DUNE][1] grid interface. See the file README for further details including
 license information.
 
@@ -13,7 +13,10 @@ problem, open a [merge request][4] to get your patch merged into the library.
 Changes
 -------
 
-### Unreleased
+### Unreleased (will become 2.11)
+
+* Update testgmshreader.cc for the upstream changes in dune-grid 2.11 which
+  restructured Dune::GmshReaderParser !65
 
 ### MultiDomainGrid 2.10
 

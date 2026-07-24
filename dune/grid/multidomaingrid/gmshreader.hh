@@ -1,7 +1,11 @@
 #ifndef DUNE_MULTIDOMAINGRID_GMSHREADERPARSER_HH
 #define DUNE_MULTIDOMAINGRID_GMSHREADERPARSER_HH
 
+#include <algorithm>
+
 #include <dune/common/exceptions.hh>
+
+#include <dune/grid/io/file/gmsh/gmsh2parser.hh>
 
 namespace Dune {
 
@@ -13,24 +17,27 @@ class MultiDomainGrid;
 
 } // namespace mdgrid
 
-// forward declaration
-template<typename GridType>
-class GmshReaderParser;
+namespace Impl::Gmsh {
 
+// Since dune-grid 2.11 the (formerly public) GmshReaderParser has been renamed
+// and moved to Dune::Impl::Gmsh::Gmsh2Parser. GmshReader::doRead() now
+// instantiates Gmsh2Parser<Grid> directly, so we hook the sub-domain marking
+// into the reading process by specializing Gmsh2Parser for MultiDomainGrid.
 template<class HostGrid, class MDGTraits>
-class GmshReaderParser<Dune::mdgrid::MultiDomainGrid<HostGrid, MDGTraits>> : public Dune::GmshReaderParser<HostGrid> {
+class Gmsh2Parser<Dune::mdgrid::MultiDomainGrid<HostGrid, MDGTraits>>
+  : public Gmsh2Parser<HostGrid> {
 public:
 
   using Grid = Dune::mdgrid::MultiDomainGrid<HostGrid, MDGTraits>;
 
-  GmshReaderParser(Dune::GridFactory<Grid>& factory, bool v, bool i)
-    : Dune::GmshReaderParser<HostGrid>{factory.hostGridFactory(), v, i}
+  Gmsh2Parser(Dune::GridFactory<Grid>& factory, bool v, bool i)
+    : Gmsh2Parser<HostGrid>{factory.hostGridFactory(), v, i}
     , _factory{factory}
   {}
 
   void read (const std::string& f)
   {
-    Dune::GmshReaderParser<HostGrid>::read(f);
+    Gmsh2Parser<HostGrid>::read(f);
     // list of gmsh domain indices for each entity (gmsh index starts at 1!)
     const auto& sub_domain_ids = this->elementIndexMap();
     if (begin(sub_domain_ids) == end(sub_domain_ids))
@@ -59,6 +66,8 @@ public:
 private:
   Dune::GridFactory<Grid>& _factory;
 };
+
+} // namespace Impl::Gmsh
 
 } // namespace Dune
 

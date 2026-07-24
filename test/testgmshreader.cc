@@ -10,7 +10,7 @@ void test_gmsh_reader(std::string fileName, std::size_t expectedDomains) {
   auto mdgrid = Dune::GmshReader<Grid>::read(fileName);
 
   if (mdgrid->maxAssignedSubDomainIndex() + 1 != static_cast<typename Grid::SubDomainIndex>(expectedDomains))
-    DUNE_THROW(Dune::InvalidStateException, "Grid does not contain expected number of sub-domains");
+    DUNE_THROW(Dune::InvalidStateException, "Grid does not contain expected number of sub-domains, expected " << expectedDomains << ", got " << (mdgrid->maxAssignedSubDomainIndex() + 1));
 
   gridinfo(*mdgrid);
   for (typename Grid::SubDomainIndex i = 0; i != mdgrid->maxAssignedSubDomainIndex()+1; ++i)
