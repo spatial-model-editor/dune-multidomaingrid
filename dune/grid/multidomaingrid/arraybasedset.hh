@@ -8,7 +8,6 @@
 #include <cstdint>
 #include <limits>
 #include <type_traits>
-#include <strings.h>
 
 #include <dune/common/exceptions.hh>
 

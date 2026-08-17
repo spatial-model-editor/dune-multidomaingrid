@@ -8,7 +8,6 @@
 #include <dune/common/exceptions.hh>
 #include <type_traits>
 #include <cassert>
-#include <strings.h>
 
 namespace Dune {
 

@@ -2,11 +2,11 @@
 #define DUNE_MULTIDOMAINGRID_SUBDOMAINSET_HH
 
 #include <algorithm>
+#include <bit>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
-#include <strings.h>
 #include <dune/common/typetraits.hh>
 #include <dune/common/iteratorfacades.hh>
 #include <dune/common/exceptions.hh>
@@ -100,45 +100,6 @@ namespace sds_detail {
   };
 
   //! \internal
-  template<typename T>
-  class Log2 {
-
-  private:
-    inline static std::size_t doCalculation(T value);
-
-  public:
-
-    inline static std::size_t calculate(T value) {
-      assert(value != 0 && (value & (value-1)) == 0); // make sure value is a power of 2
-      return doCalculation(value);
-    }
-  };
-
-  //! \internal asdf
-  template<>
-  inline std::size_t Log2<uint8_t>::doCalculation(uint8_t value) {
-    return __builtin_ffs(value)-1;
-  }
-
-  //! \internal
-  template<>
-  inline std::size_t Log2<uint16_t>::doCalculation(uint16_t value) {
-    return __builtin_ffs(value)-1;
-  }
-
-  //! \internal
-  template<>
-  inline std::size_t Log2<uint32_t>::doCalculation(uint32_t value) {
-    return __builtin_ffsl(value)-1;
-  }
-
-  //! \internal
-  template<>
-  inline std::size_t Log2<uint64_t>::doCalculation(uint64_t value) {
-    return __builtin_ffsll(value)-1;
-  }
-
-  //! \internal
   template<typename SubDomainIndex, typename SetStorage>
   class Iterator : public ForwardIteratorFacade<Iterator<SubDomainIndex,SetStorage>,
 						SubDomainIndex,
@@ -163,17 +124,17 @@ namespace sds_detail {
     }
 
     void increment() {
-      _state &= ~(base << _value);
+      _state &= ~(base << _value); // remove current bit from state
       if (_state != 0) {
-	findNextValue();
+        findNextValue();
       }
     }
 
   private:
 
     void findNextValue() {
-      SetStorage lowestBit = _state & ((~_state) + 1);
-      _value = Log2<SetStorage>::calculate(lowestBit);
+      SetStorage lowestBit = _state & ((~_state) + 1); // isolate lowest bit
+      _value = std::countr_zero(lowestBit); // equivalent to log2(lowestBit)
     }
 
     explicit Iterator(SetStorage state) :
@@ -181,7 +142,7 @@ namespace sds_detail {
       _value(0)
     {
       if (_state != 0)
-	findNextValue();
+        findNextValue();
     }
 
     // optimized constructor for end iterator
