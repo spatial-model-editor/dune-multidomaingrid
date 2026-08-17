@@ -3,9 +3,9 @@
 
 #Name of the module
 Module: dune-multidomaingrid
-Version: 2.11-git
+Version: 2.12-git
 Maintainer: santiago.ospina@iwr.uni-heidelberg.de
 #depending on
-Depends: dune-grid (>= 2.11)
+Depends: dune-grid (>= 2.12)
 Suggests: dune-uggrid
 Whitespace-Hook: Yes
