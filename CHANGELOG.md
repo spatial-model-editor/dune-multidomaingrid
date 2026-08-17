@@ -13,7 +13,9 @@ problem, open a [merge request][4] to get your patch merged into the library.
 Changes
 -------
 
-### Unreleased (will become 2.11)
+### Unreleased (will become 2.12)
+
+### MultiDomainGrid 2.11
 
 * Update testgmshreader.cc for the upstream changes in dune-grid 2.11 which
   restructured Dune::GmshReaderParser !65
